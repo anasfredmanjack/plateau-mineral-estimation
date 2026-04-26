@@ -21,6 +21,7 @@ export interface MineralPrediction {
   uranium: number;
   kThUratio: number;
   riskLevel: 'low' | 'medium' | 'high';
+  dataSource?: 'radiometric' | 'online' | 'synthetic';
 }
 
 export interface ModelMetrics {
