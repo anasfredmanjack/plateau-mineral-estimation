@@ -202,7 +202,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-100">ARUM ALPHA</h1>
+                <h1 className="text-xl font-bold text-slate-100">ac3prototype</h1>
                 <p className="text-xs text-slate-400">Naraguta Radiometric Grid Lookup</p>
               </div>
             </div>

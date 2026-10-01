@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ARUM ALPHA - Naraguta Grid",
+  title: "ac3prototype - Naraguta Grid",
   description: "Look up potassium, thorium, and uranium grid values from Naraguta Grid by location or coordinates.",
   keywords: ["mineral estimation", "tin mining", "Jos Plateau", "Nigeria", "machine learning", "geophysics", "radiometric"],
 };

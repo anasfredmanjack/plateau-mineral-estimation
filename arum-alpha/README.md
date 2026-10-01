@@ -1,4 +1,4 @@
-# ARUM ALPHA — Naraguta Sheet 168 lookup
+# ac3prototype — Naraguta Sheet 168 lookup
 
 Search for a place, click the map, or enter WGS84 latitude and longitude to retrieve the nearest cell from `Sheet168_Naraguta_K_Th_U_All_Data_FIXED.xlsx`.
 

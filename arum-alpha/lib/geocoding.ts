@@ -112,7 +112,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Location
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
       {
         headers: {
-          'User-Agent': 'ARUM-ALPHA-Mineral-Estimation/1.0'
+          'User-Agent': 'ac3prototype/1.0'
         }
       }
     );
@@ -195,7 +195,7 @@ export async function searchLocation(query: string): Promise<Array<{name: string
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}, Plateau State, Nigeria&limit=5`,
       {
         headers: {
-          'User-Agent': 'ARUM-ALPHA-Mineral-Estimation/1.0'
+          'User-Agent': 'ac3prototype/1.0'
         }
       }
     );
