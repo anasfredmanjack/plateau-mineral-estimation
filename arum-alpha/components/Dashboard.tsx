@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { 
   Search, 
   MapPin, 
   Layers, 
   Info, 
-  BarChart3,
   Download,
   RefreshCw,
   Sparkles
@@ -45,6 +44,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
   const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [prediction, setPrediction] = useState<EstimationResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [predictions, setPredictions] = useState<MineralPrediction[]>([]);
   const [inputLat, setInputLat] = useState('');
@@ -55,29 +55,36 @@ export default function Dashboard({ initialData }: DashboardProps) {
   const [location, setLocation] = useState<LocationInfo | null>(null);
   const [landmarks, setLandmarks] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const requestId = useRef(0);
+  const [totalPoints, setTotalPoints] = useState(initialData?.dataPoints ?? 0);
   
   // Load initial data
   useEffect(() => {
-    if (!initialData) {
-      fetchData();
-    }
-  }, [initialData]);
-  
-  const fetchData = async () => {
+    if (initialData) return;
+    const fetchData = async () => {
     try {
       const response = await fetch('/api/data');
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to load sheet data');
       if (data.sample) {
         setDataPoints(data.sample);
         setBounds(data.bounds);
+        setTotalPoints(data.dataPoints);
       }
     } catch (err) {
       console.error('Failed to load data:', err);
+      setError('Unable to load the Naraguta sheet data.');
     }
-  };
+    };
+    void fetchData();
+  }, [initialData]);
   
   const handleEstimate = useCallback(async (lat: number, lng: number) => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
+    setPrediction(null);
+    setLocation(null);
+    setLandmarks([]);
     setError(null);
     setSelectedPoint({ lat, lng });
     
@@ -99,7 +106,10 @@ export default function Dashboard({ initialData }: DashboardProps) {
       }
       
       const result: EstimationResponse = await response.json();
+      if (currentRequest !== requestId.current) return;
       setPrediction(result);
+      setLoading(false);
+      setPredictions(prev => [...prev, result.prediction]);
       
       // Get location info and landmarks
       const [locationInfo, nearbyLandmarks] = await Promise.all([
@@ -107,17 +117,15 @@ export default function Dashboard({ initialData }: DashboardProps) {
         Promise.resolve(getNearbyLandmarks(lat, lng))
       ]);
       
+      if (currentRequest !== requestId.current) return;
       setLocation(locationInfo);
       setLandmarks(nearbyLandmarks);
       
-      // Add to predictions list for heatmap
-      if (result.prediction) {
-        setPredictions(prev => [...prev, result.prediction]);
-      }
     } catch (err) {
+      if (currentRequest !== requestId.current) return;
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setLoading(false);
+      if (currentRequest === requestId.current) setLoading(false);
     }
   }, []);
   
@@ -128,10 +136,10 @@ export default function Dashboard({ initialData }: DashboardProps) {
   }, [handleEstimate]);
   
   const handleManualEstimate = () => {
-    const lat = parseFloat(inputLat);
-    const lng = parseFloat(inputLng);
+    const lat = Number(inputLat);
+    const lng = Number(inputLng);
     
-    if (isNaN(lat) || isNaN(lng)) {
+    if (!inputLat.trim() || !inputLng.trim() || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
       setError('Please enter valid coordinates');
       return;
     }
@@ -163,7 +171,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
-    setLoading(true);
+    setSearching(true);
     try {
       const results = await searchLocation(searchQuery);
       setSearchResults(results);
@@ -171,7 +179,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
     } catch (err) {
       console.error('Search failed:', err);
     } finally {
-      setLoading(false);
+      setSearching(false);
     }
   };
   
@@ -195,7 +203,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-100">ARUM ALPHA</h1>
-                <p className="text-xs text-slate-400">AI-Powered Mineral Estimation System</p>
+                <p className="text-xs text-slate-400">Naraguta Radiometric Sheet Lookup</p>
               </div>
             </div>
             
@@ -206,7 +214,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
               </div>
               <div className="text-right border-l border-slate-600 pl-4">
                 <p className="text-xs text-slate-400">Data Points</p>
-                <p className="text-sm font-medium text-slate-200">{dataPoints.length.toLocaleString()}</p>
+                <p className="text-sm font-medium text-slate-200">{totalPoints.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -215,9 +223,9 @@ export default function Dashboard({ initialData }: DashboardProps) {
       
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(100vh-140px)]">
           {/* Left Panel - Controls & Input */}
-          <div className="lg:col-span-1 space-y-4 overflow-y-auto">
+          <div className="lg:col-span-1 space-y-4 lg:overflow-y-auto">
             {/* Location Search */}
             <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4">
               <h3 className="font-semibold text-slate-200 mb-3 flex items-center gap-2">
@@ -236,7 +244,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
                 />
                 <button
                   onClick={handleSearch}
-                  disabled={loading}
+                  disabled={searching}
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-blue-400"
                 >
                   <Search className="w-4 h-4" />
@@ -303,12 +311,12 @@ export default function Dashboard({ initialData }: DashboardProps) {
                   {loading ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Analyzing...
+                      Looking up...
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      Estimate Mineral Potential
+                      Look Up Sheet Values
                     </>
                   )}
                 </button>
@@ -351,7 +359,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
                     onChange={(e) => setShowHeatmap(e.target.checked)}
                     className="rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
                   />
-                  Show Prediction Heatmap
+                  Show Sheet Sample Points
                 </label>
               </div>
               
@@ -373,31 +381,14 @@ export default function Dashboard({ initialData }: DashboardProps) {
                 Legend
               </h3>
               
-              <div className="space-y-2 text-sm text-slate-300">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></span>
-                  <span>High Tin Potential (&gt;0.3%)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-yellow-500 shadow-sm shadow-yellow-500/50"></span>
-                  <span>Medium Potential (0.15-0.3%)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></span>
-                  <span>Low Potential (&lt;0.15%)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>
-                  <span>Selected Point</span>
-                </div>
-              </div>
+              <p className="text-sm text-slate-300">Grey: sampled sheet cells. Cyan: matched cells. Blue: selected location.</p>
             </div>
           </div>
           
           {/* Right Panel - Map */}
           <div className="lg:col-span-2 bg-slate-800 rounded-lg shadow-lg border border-slate-700 overflow-hidden relative" style={{ minHeight: '400px' }}>
             <MapView
-              key={`map-${selectedPoint?.lat}-${selectedPoint?.lng}-${showHeatmap}`}
+
               dataPoints={dataPoints}
               predictions={predictions}
               selectedPoint={selectedPoint}
@@ -408,34 +399,8 @@ export default function Dashboard({ initialData }: DashboardProps) {
           </div>
         </div>
         
-        {/* Stats Bar */}
-        <div className="mt-4 bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div className="p-3 rounded-lg bg-slate-700/50">
-              <p className="text-2xl font-bold text-blue-400">{predictions.length}</p>
-              <p className="text-xs text-slate-400">Estimations Made</p>
-            </div>
-            <div className="p-3 rounded-lg bg-slate-700/50">
-              <p className="text-2xl font-bold text-green-400">
-                {predictions.filter(p => p.predictedGrade > 0.3).length}
-              </p>
-              <p className="text-xs text-slate-400">High Potential Sites</p>
-            </div>
-            <div className="p-3 rounded-lg bg-slate-700/50">
-              <p className="text-2xl font-bold text-yellow-400">
-                {predictions.filter(p => p.predictedGrade > 0.15 && p.predictedGrade <= 0.3).length}
-              </p>
-              <p className="text-xs text-slate-400">Medium Potential Sites</p>
-            </div>
-            <div className="p-3 rounded-lg bg-slate-700/50">
-              <p className="text-2xl font-bold text-slate-200">
-                {predictions.length > 0 
-                  ? (predictions.reduce((s, p) => s + p.predictedGrade, 0) / predictions.length * 100).toFixed(2)
-                  : '0.00'}%
-              </p>
-              <p className="text-xs text-slate-400">Average Predicted Grade</p>
-            </div>
-          </div>
+        <div className="mt-4 bg-slate-800 rounded-lg border border-slate-700 p-4 text-sm text-slate-300">
+          {totalPoints.toLocaleString()} sheet cells · 125 m spacing · {predictions.length} completed lookups
         </div>
       </main>
     </div>

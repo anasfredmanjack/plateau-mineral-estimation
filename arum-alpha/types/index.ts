@@ -13,14 +13,22 @@ export interface MineralPrediction {
   lng: number;
   x: number;
   y: number;
-  predictedGrade: number;
-  confidence: number;
+  predictedGrade?: number;
+  confidence?: number;
   mineralType: string;
   potassium: number;
   thorium: number;
   uranium: number;
-  kThUratio: number;
-  riskLevel: 'low' | 'medium' | 'high';
+  kThUratio?: number;
+  riskLevel?: 'low' | 'medium' | 'high';
+  sheetMatch?: {
+    source: string;
+    cell: string;
+    requestedLat: number;
+    requestedLng: number;
+    distanceMetres: number;
+    units: string;
+  };
   dataSource?: 'radiometric' | 'online' | 'synthetic';
 }
 
@@ -41,7 +49,7 @@ export interface EstimationRequest {
 export interface EstimationResponse {
   prediction: MineralPrediction;
   surroundingPoints?: MineralPrediction[];
-  modelMetrics: ModelMetrics;
+  modelMetrics?: ModelMetrics;
   analysis: string;
   recommendations: string[];
 }

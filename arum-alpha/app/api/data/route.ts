@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { loadAllRadiometricData, getStudyAreaBounds } from '@/lib/grdParser';
+import { loadAllRadiometricData, getStudyAreaBounds, sheetMetadata } from '@/lib/grdParser';
 import { RadiometricData, StudyAreaBounds } from '@/types';
 
 // Config for static export
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 export const revalidate = 0;
 
 interface DataResponse {
@@ -32,8 +33,7 @@ export async function GET(): Promise<NextResponse<DataResponse | { error: string
     }
     
     // Estimate grid dimensions
-    const nx = Math.sqrt(data.length * ((bounds.maxX - bounds.minX) / (bounds.maxY - bounds.minY)));
-    const ny = data.length / nx;
+    const { nx, ny } = sheetMetadata;
     
     const response: DataResponse = {
       bounds,

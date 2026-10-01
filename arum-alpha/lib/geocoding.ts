@@ -106,13 +106,7 @@ const LOCATION_BOUNDS: Array<{
 ];
 
 export async function reverseGeocode(lat: number, lng: number): Promise<LocationInfo> {
-  // First check if coordinates fall within known areas
-  const localMatch = findLocalLocation(lat, lng);
-  if (localMatch) {
-    return localMatch;
-  }
-  
-  // Fall back to Nominatim API for unknown locations
+  // Resolve the actual position rather than naming it from overlapping rough bounds.
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
@@ -154,16 +148,6 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Location
   }
 }
 
-function findLocalLocation(lat: number, lng: number): LocationInfo | null {
-  for (const bound of LOCATION_BOUNDS) {
-    if (lat >= bound.minLat && lat <= bound.maxLat && 
-        lng >= bound.minLng && lng <= bound.maxLng) {
-      return KNOWN_LOCATIONS[bound.name] || null;
-    }
-  }
-  return null;
-}
-
 export function getNearbyLandmarks(lat: number, lng: number): string[] {
   const landmarks: string[] = [];
   
@@ -203,27 +187,7 @@ export function getNearbyLandmarks(lat: number, lng: number): string[] {
 
 // Search for locations by name
 export async function searchLocation(query: string): Promise<Array<{name: string; lat: number; lng: number}>> {
-  const normalizedQuery = query.toLowerCase().trim();
-  
-  // Check local database first
-  const localMatches = Object.entries(KNOWN_LOCATIONS)
-    .filter(([key, loc]) => 
-      loc.name.toLowerCase().includes(normalizedQuery) ||
-      loc.admin2.toLowerCase().includes(normalizedQuery)
-    )
-    .map(([key, loc]) => {
-      // Get approximate center from bounds
-      const bound = LOCATION_BOUNDS.find(b => b.name === key);
-      return {
-        name: loc.fullAddress,
-        lat: bound ? (bound.minLat + bound.maxLat) / 2 : 9.75,
-        lng: bound ? (bound.minLng + bound.maxLng) / 2 : 8.80
-      };
-    });
-  
-  if (localMatches.length > 0) {
-    return localMatches;
-  }
+  if (!query.trim()) return [];
   
   // Fall back to Nominatim search
   try {
@@ -241,7 +205,7 @@ export async function searchLocation(query: string): Promise<Array<{name: string
     }
     
     const data = await response.json();
-    return data.map((item: any) => ({
+    return data.map((item: { display_name: string; lat: string; lon: string }) => ({
       name: item.display_name,
       lat: parseFloat(item.lat),
       lng: parseFloat(item.lon)
