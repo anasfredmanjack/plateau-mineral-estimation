@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const data = loadAllRadiometricData();
     const nearest = findNearestDataPoint(data, body.lat, body.lng);
-    if (!nearest) return NextResponse.json({ error: 'No Naraguta Sheet 168 data at this location. Select a point inside the sheet coverage.' }, { status: 404 });
+    if (!nearest) return NextResponse.json({ error: 'No Naraguta grid data at this location. Select a point inside the grid coverage.' }, { status: 404 });
     const makeResult = (p: RadiometricData): MineralPrediction => ({ ...p, mineralType: 'Naraguta radiometric grid',
       dataSource: 'radiometric', sheetMatch: getSheetMatch(p, body.lat, body.lng) });
     const result: EstimationResponse = {
@@ -25,13 +25,13 @@ export async function POST(request: NextRequest) {
       surroundingPoints: body.includeSurrounding ? findPointsInRadius(data, body.lat, body.lng, body.radius ?? 2)
         .sort((a, b) => Math.hypot(a.x - nearest.x, a.y - nearest.y) - Math.hypot(b.x - nearest.x, b.y - nearest.y))
         .slice(0, 10).map(makeResult) : undefined,
-      analysis: 'Values are copied from the nearest cell in the supplied Naraguta workbook. Signs are preserved. The workbook does not specify data units or provide measured tin grades.',
-      recommendations: ['Use the displayed Excel cell and UTM coordinates to compare all three grid sheets.'],
+      analysis: 'Potassium, thorium, and uranium values from the Naraguta grid file. Grid coordinates use WGS 84 / UTM zone 32N (EPSG:32632), in metres.',
+      recommendations: ['Use the displayed coordinates to locate this point in the Naraguta grid.'],
     };
     return NextResponse.json(result);
   } catch (error) {
     console.error('Naraguta lookup failed:', error);
-    return NextResponse.json({ error: 'Unable to load the Naraguta workbook data.' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to load the Naraguta grid data.' }, { status: 500 });
   }
 }
 export async function GET() {

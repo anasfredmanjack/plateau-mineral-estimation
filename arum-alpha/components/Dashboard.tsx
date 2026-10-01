@@ -65,7 +65,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
     try {
       const response = await fetch('/api/data');
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to load sheet data');
+      if (!response.ok) throw new Error(data.error || 'Failed to load grid data');
       if (data.sample) {
         setDataPoints(data.sample);
         setBounds(data.bounds);
@@ -73,7 +73,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
       }
     } catch (err) {
       console.error('Failed to load data:', err);
-      setError('Unable to load the Naraguta sheet data.');
+      setError('Unable to load the Naraguta grid data.');
     }
     };
     void fetchData();
@@ -203,7 +203,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-100">ARUM ALPHA</h1>
-                <p className="text-xs text-slate-400">Naraguta Radiometric Sheet Lookup</p>
+                <p className="text-xs text-slate-400">Naraguta Radiometric Grid Lookup</p>
               </div>
             </div>
             
@@ -316,7 +316,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      Look Up Sheet Values
+                      Look Up Grid Values
                     </>
                   )}
                 </button>
@@ -359,7 +359,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
                     onChange={(e) => setShowHeatmap(e.target.checked)}
                     className="rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
                   />
-                  Show Sheet Sample Points
+                  Show Grid Sample Points
                 </label>
               </div>
               
@@ -381,7 +381,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
                 Legend
               </h3>
               
-              <p className="text-sm text-slate-300">Grey: sampled sheet cells. Cyan: matched cells. Blue: selected location.</p>
+              <p className="text-sm text-slate-300">Grey: sampled grid points. Cyan: matched cells. Blue: selected location.</p>
             </div>
           </div>
           
@@ -400,7 +400,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
         </div>
         
         <div className="mt-4 bg-slate-800 rounded-lg border border-slate-700 p-4 text-sm text-slate-300">
-          {totalPoints.toLocaleString()} sheet cells · 125 m spacing · {predictions.length} completed lookups
+          {totalPoints.toLocaleString()} grid points · 125 m spacing · {predictions.length} completed lookups
         </div>
       </main>
     </div>

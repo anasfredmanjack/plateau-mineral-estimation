@@ -25,7 +25,7 @@ function MapControls({ bounds, selectedPoint, onPointSelect }: Pick<Props, 'boun
 function Values({ point }: { point: RadiometricData }) {
   return <div><strong>K:</strong> {String(point.potassium)}<br />
     <strong>Th:</strong> {String(point.thorium)}<br />
-    <strong>U:</strong> {String(point.uranium)}<br />Units unspecified in source workbook.</div>;
+    <strong>U:</strong> {String(point.uranium)}<br />Values from the Naraguta grid file.</div>;
 }
 export default function MapView({ dataPoints, predictions, selectedPoint, onPointSelect, bounds, showHeatmap = true }: Props) {
   return <MapContainer center={[9.75, 8.75]} zoom={11} style={{ height: '100%', width: '100%', minHeight: 400 }}>
@@ -39,7 +39,7 @@ export default function MapView({ dataPoints, predictions, selectedPoint, onPoin
     </LayersControl>
     <MapControls bounds={bounds} selectedPoint={selectedPoint} onPointSelect={onPointSelect} />
     {bounds && <Rectangle bounds={[[bounds.minLat, bounds.minLng], [bounds.maxLat, bounds.maxLng]]} pathOptions={{ color: '#3b82f6', weight: 2, fillOpacity: 0.02 }}>
-      <Tooltip>Approximate Naraguta Sheet 168 extent</Tooltip>
+      <Tooltip>Approximate Naraguta grid coverage</Tooltip>
     </Rectangle>}
     {showHeatmap && dataPoints.map((point, i) => <CircleMarker key={i} center={[point.lat, point.lng]} radius={3}
       pathOptions={{ color: '#94a3b8', weight: 1, fillOpacity: 0.5 }}
@@ -49,7 +49,7 @@ export default function MapView({ dataPoints, predictions, selectedPoint, onPoin
     {predictions?.map((point, i) => <CircleMarker key={`match-${i}`} center={[point.lat, point.lng]} radius={6}
       pathOptions={{ color: '#22d3ee', weight: 2 }} bubblingMouseEvents={false}
       eventHandlers={{ click: () => onPointSelect?.(point.lat, point.lng) }}>
-      <Tooltip>Matched cell {point.sheetMatch?.cell}<Values point={point} /></Tooltip>
+      <Tooltip>Matched grid location<Values point={point} /></Tooltip>
     </CircleMarker>)}
     {selectedPoint && <CircleMarker center={[selectedPoint.lat, selectedPoint.lng]} radius={10}
       pathOptions={{ color: '#3b82f6', weight: 3 }}><Tooltip>Selected location</Tooltip></CircleMarker>}
