@@ -381,7 +381,11 @@ export default function Dashboard({ initialData }: DashboardProps) {
                 Legend
               </h3>
               
-              <p className="text-sm text-slate-300">Grey: sampled grid points. Cyan: matched cells. Blue: selected location.</p>
+              <div className="space-y-2 text-sm text-slate-300">
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-slate-400" />Grid sample points</div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-cyan-400" />Matched grid locations</div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-blue-500" />Selected location</div>
+              </div>
             </div>
           </div>
           
@@ -399,8 +403,13 @@ export default function Dashboard({ initialData }: DashboardProps) {
           </div>
         </div>
         
-        <div className="mt-4 bg-slate-800 rounded-lg border border-slate-700 p-4 text-sm text-slate-300">
-          {totalPoints.toLocaleString()} grid points · 125 m spacing · {predictions.length} completed lookups
+        <div className="mt-4 bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div className="p-3 rounded-lg bg-slate-700/50"><p className="text-2xl font-bold text-blue-400">{predictions.length}</p><p className="text-xs text-slate-400">Completed Lookups</p></div>
+            <div className="p-3 rounded-lg bg-slate-700/50"><p className="text-2xl font-bold text-green-400">{totalPoints.toLocaleString()}</p><p className="text-xs text-slate-400">Grid Points</p></div>
+            <div className="p-3 rounded-lg bg-slate-700/50"><p className="text-2xl font-bold text-yellow-400">125 m</p><p className="text-xs text-slate-400">Grid Spacing</p></div>
+            <div className="p-3 rounded-lg bg-slate-700/50"><p className="text-2xl font-bold text-slate-200">3</p><p className="text-xs text-slate-400">Radiometric Channels</p></div>
+          </div>
         </div>
       </main>
     </div>
