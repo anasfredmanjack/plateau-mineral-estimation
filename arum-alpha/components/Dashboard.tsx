@@ -339,7 +339,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
               analysis={prediction?.analysis}
               analysisSource={prediction?.analysisSource}
               recommendations={prediction?.recommendations}
-              modelMetrics={prediction?.modelMetrics}
+
               location={location}
               landmarks={landmarks}
               loading={loading}

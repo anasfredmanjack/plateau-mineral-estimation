@@ -1,19 +1,18 @@
 'use client';
-import { useState } from 'react';
-import { FlaskConical, MapPin, Sparkles, Navigation, CheckCircle, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
-import type { MineralPrediction, ModelMetrics, LocationInfo } from '@/types';
+import { FlaskConical, MapPin, Sparkles, Navigation, CheckCircle } from 'lucide-react';
+import type { MineralPrediction, LocationInfo } from '@/types';
 interface Props {
   prediction: MineralPrediction | null;
   analysis?: string;
   analysisSource?: 'ai' | 'local';
   recommendations?: string[];
-  modelMetrics?: ModelMetrics;
+
   location?: LocationInfo | null;
   landmarks?: string[];
   loading?: boolean;
 }
-export default function PredictionPanel({ prediction, analysis, analysisSource, recommendations, modelMetrics, location, loading }: Props) {
-  const [showDetails, setShowDetails] = useState(false);
+export default function PredictionPanel({ prediction, analysis, analysisSource, recommendations, location, loading }: Props) {
+
   if (loading) return <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-6 animate-pulse" aria-label="Loading grid values">
     <div className="h-4 bg-slate-600 rounded w-3/4 mb-4" />
     <div className="h-8 bg-slate-600 rounded w-1/2 mb-4" />
@@ -65,10 +64,6 @@ export default function PredictionPanel({ prediction, analysis, analysisSource, 
         <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" />Recommendations</h4>
         <ol className="space-y-2">{recommendations.map((rec, i) => <li key={i} className="flex items-start gap-2 text-sm text-slate-400"><span className="w-5 h-5 flex items-center justify-center shrink-0 rounded-full bg-blue-900/50 text-blue-300 border border-blue-700/30 text-xs">{i + 1}</span>{rec}</li>)}</ol>
       </div>}
-      <div className="border-t border-slate-700 py-3">
-        <button onClick={() => setShowDetails(!showDetails)} aria-expanded={showDetails} className="flex items-center justify-between w-full text-sm text-slate-400 hover:text-slate-200"><span className="flex items-center gap-1"><TrendingUp className="w-4 h-4" />Model Performance</span>{showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</button>
-        {showDetails && <div className="mt-3 bg-slate-700/30 border border-slate-700 rounded-lg p-3 text-sm text-slate-400">{modelMetrics ? `RMSE: ${modelMetrics.rmse} · MAE: ${modelMetrics.mae} · R²: ${modelMetrics.r2} · MAPE: ${modelMetrics.mape}%` : 'No validated prediction model is connected. Tin grade, confidence, risk, and performance metrics need a model evaluated against measured samples.'}</div>}
-      </div>
       <div className="border-t border-slate-700 pt-4">
         <h4 className="flex items-center gap-1 text-slate-300 text-sm font-semibold mb-3"><Navigation className="w-4 h-4 text-blue-400" />Coordinate System</h4>
         <div className="bg-slate-700/30 border border-slate-700 rounded-lg p-3 space-y-2 text-xs text-slate-400">
