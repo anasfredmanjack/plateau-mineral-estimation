@@ -1,16 +1,19 @@
 'use client';
-import { FlaskConical, MapPin, Sparkles, Navigation } from 'lucide-react';
+import { useState } from 'react';
+import { FlaskConical, MapPin, Sparkles, Navigation, CheckCircle, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 import type { MineralPrediction, ModelMetrics, LocationInfo } from '@/types';
 interface Props {
   prediction: MineralPrediction | null;
   analysis?: string;
+  analysisSource?: 'ai' | 'local';
   recommendations?: string[];
   modelMetrics?: ModelMetrics;
   location?: LocationInfo | null;
   landmarks?: string[];
   loading?: boolean;
 }
-export default function PredictionPanel({ prediction, location, loading }: Props) {
+export default function PredictionPanel({ prediction, analysis, analysisSource, recommendations, modelMetrics, location, loading }: Props) {
+  const [showDetails, setShowDetails] = useState(false);
   if (loading) return <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-6 animate-pulse" aria-label="Loading grid values">
     <div className="h-4 bg-slate-600 rounded w-3/4 mb-4" />
     <div className="h-8 bg-slate-600 rounded w-1/2 mb-4" />
@@ -42,12 +45,30 @@ export default function PredictionPanel({ prediction, location, loading }: Props
             <dd className="font-semibold text-sm break-all" title={String(value)}>{value.toFixed(3)}</dd>
           </div>)}
         </dl>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-400">
+          <p>K/(Th+U): <span className="text-slate-200">{prediction.thorium + prediction.uranium !== 0 ? (prediction.potassium / (prediction.thorium + prediction.uranium)).toFixed(3) : 'Undefined'}</span></p>
+          <p>Th/U: <span className="text-slate-200">{prediction.uranium !== 0 ? (prediction.thorium / prediction.uranium).toFixed(3) : 'Undefined'}</span></p>
+        </div>
+        <p className="text-xs text-slate-500 mt-1">Ratios of raw grid values.</p>
         <p className="text-xs text-slate-400 mt-3">Values from the Naraguta grid file, displayed to three decimal places.</p>
       </div>
       {location && <div className="border-t border-slate-700 pt-4 mb-4">
         <h4 className="flex items-center gap-1 text-slate-300 text-sm font-semibold mb-2"><MapPin className="w-4 h-4 text-blue-400" />Location Details</h4>
         <p className="text-sm text-slate-400">{location.fullAddress}</p>
       </div>}
+      {analysis && <div className="border-t border-slate-700 pt-4 mb-4">
+        <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-1"><Sparkles className="w-4 h-4 text-blue-400" />AI Summary</h4>
+        <p className="text-xs text-blue-300 mb-2">{analysisSource === 'ai' ? 'AI interpretation — verify with field evidence' : 'Local summary — AI service unavailable'}</p>
+        <p className="text-sm text-slate-400 leading-relaxed">{analysis}</p>
+      </div>}
+      {!!recommendations?.length && <div className="border-t border-slate-700 pt-4 mb-4">
+        <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" />Recommendations</h4>
+        <ol className="space-y-2">{recommendations.map((rec, i) => <li key={i} className="flex items-start gap-2 text-sm text-slate-400"><span className="w-5 h-5 flex items-center justify-center shrink-0 rounded-full bg-blue-900/50 text-blue-300 border border-blue-700/30 text-xs">{i + 1}</span>{rec}</li>)}</ol>
+      </div>}
+      <div className="border-t border-slate-700 py-3">
+        <button onClick={() => setShowDetails(!showDetails)} aria-expanded={showDetails} className="flex items-center justify-between w-full text-sm text-slate-400 hover:text-slate-200"><span className="flex items-center gap-1"><TrendingUp className="w-4 h-4" />Model Performance</span>{showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</button>
+        {showDetails && <div className="mt-3 bg-slate-700/30 border border-slate-700 rounded-lg p-3 text-sm text-slate-400">{modelMetrics ? `RMSE: ${modelMetrics.rmse} · MAE: ${modelMetrics.mae} · R²: ${modelMetrics.r2} · MAPE: ${modelMetrics.mape}%` : 'No validated prediction model is connected. Tin grade, confidence, risk, and performance metrics need a model evaluated against measured samples.'}</div>}
+      </div>
       <div className="border-t border-slate-700 pt-4">
         <h4 className="flex items-center gap-1 text-slate-300 text-sm font-semibold mb-3"><Navigation className="w-4 h-4 text-blue-400" />Coordinate System</h4>
         <div className="bg-slate-700/30 border border-slate-700 rounded-lg p-3 space-y-2 text-xs text-slate-400">

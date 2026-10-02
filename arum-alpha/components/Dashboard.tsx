@@ -337,6 +337,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
             <PredictionPanel
               prediction={prediction?.prediction || null}
               analysis={prediction?.analysis}
+              analysisSource={prediction?.analysisSource}
               recommendations={prediction?.recommendations}
               modelMetrics={prediction?.modelMetrics}
               location={location}

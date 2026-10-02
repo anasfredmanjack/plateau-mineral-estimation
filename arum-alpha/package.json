@@ -10,7 +10,7 @@
     "build": "next build && node scripts/verify-production.cjs",
     "start": "next start",
     "lint": "eslint",
-    "test": "node scripts/test-naraguta.cjs",
+    "test": "node scripts/test-naraguta.cjs && node scripts/test-grid-analysis.cjs",
     "test:production": "node scripts/smoke-production.cjs"
   },
   "dependencies": {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { analyzeGrid } from '../../../lib/gridAnalysis';
 import { loadAllRadiometricData, findNearestDataPoint, findPointsInRadius, getSheetMatch } from '@/lib/grdParser';
 import type { EstimationResponse, MineralPrediction, RadiometricData } from '@/types';
 
@@ -18,6 +19,8 @@ export async function POST(request: NextRequest) {
     const data = loadAllRadiometricData();
     const nearest = findNearestDataPoint(data, body.lat, body.lng);
     if (!nearest) return NextResponse.json({ error: 'No Naraguta grid data at this location. Select a point inside the grid coverage.' }, { status: 404 });
+    const surrounding = findPointsInRadius(data, body.lat, body.lng, body.radius ?? 2);
+    const interpretation = await analyzeGrid(nearest, surrounding);
     const makeResult = (p: RadiometricData): MineralPrediction => ({ ...p, mineralType: 'Naraguta radiometric grid',
       dataSource: 'radiometric', sheetMatch: getSheetMatch(p, body.lat, body.lng) });
     const result: EstimationResponse = {
@@ -25,8 +28,7 @@ export async function POST(request: NextRequest) {
       surroundingPoints: body.includeSurrounding ? findPointsInRadius(data, body.lat, body.lng, body.radius ?? 2)
         .sort((a, b) => Math.hypot(a.x - nearest.x, a.y - nearest.y) - Math.hypot(b.x - nearest.x, b.y - nearest.y))
         .slice(0, 10).map(makeResult) : undefined,
-      analysis: 'Potassium, thorium, and uranium values from the Naraguta grid file. Grid coordinates use WGS 84 / UTM zone 32N (EPSG:32632), in metres.',
-      recommendations: ['Use the displayed coordinates to locate this point in the Naraguta grid.'],
+      ...interpretation,
     };
     return NextResponse.json(result);
   } catch (error) {

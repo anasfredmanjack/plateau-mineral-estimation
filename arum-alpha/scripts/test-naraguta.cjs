@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
+delete process.env.GROQ_API_KEY; // Keep numerical regression checks offline and deterministic.
 process.chdir(path.resolve(__dirname, '..'));
 require.extensions['.ts'] = (module, file) => {
   const source = fs.readFileSync(file, 'utf8').replaceAll("'@/lib/grdParser'", JSON.stringify(path.resolve('lib/grdParser.ts')));

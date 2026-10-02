@@ -47,6 +47,7 @@ export interface EstimationRequest {
 }
 
 export interface EstimationResponse {
+  analysisSource?: 'ai' | 'local';
   prediction: MineralPrediction;
   surroundingPoints?: MineralPrediction[];
   modelMetrics?: ModelMetrics;
