@@ -79,7 +79,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
     void fetchData();
   }, [initialData]);
   
-  const handleEstimate = useCallback(async (lat: number, lng: number) => {
+  const handleEstimate = useCallback(async (lat: number, lng: number, selectedName?: string) => {
     const currentRequest = ++requestId.current;
     setLoading(true);
     setPrediction(null);
@@ -107,13 +107,29 @@ export default function Dashboard({ initialData }: DashboardProps) {
       
       const result: EstimationResponse = await response.json();
       if (currentRequest !== requestId.current) return;
+      // Cache only completed AI assessments for this exact grid point and raw values.
+      const cacheKey = 'naraguta-radiometric-ai-v2:' + JSON.stringify([result.prediction.x, result.prediction.y, result.prediction.potassium, result.prediction.thorium, result.prediction.uranium]);
+      try {
+        if (result.analysisSource === 'ai' && result.aiEstimates?.confidencePercent != null && result.aiEstimates.riskLevel) {
+          localStorage.setItem(cacheKey, JSON.stringify({ analysis: result.analysis, recommendations: result.recommendations, aiEstimates: result.aiEstimates, savedAt: new Date().toISOString() }));
+        } else {
+          const saved = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+          if (saved && typeof saved.analysis === 'string' && Array.isArray(saved.recommendations) && Number.isFinite(saved.aiEstimates?.confidencePercent) && saved.aiEstimates.confidencePercent >= 0 && saved.aiEstimates.confidencePercent <= 100 && ['low', 'medium', 'high'].includes(saved.aiEstimates.riskLevel) && typeof saved.aiEstimates.rationale === 'string' && Number.isFinite(Date.parse(saved.savedAt))) {
+            result.analysisSource = 'cached-ai';
+            result.analysis = saved.analysis;
+            result.recommendations = saved.recommendations;
+            result.aiEstimates = saved.aiEstimates;
+            result.analysisError = 'Live AI unavailable. Showing the saved AI assessment from ' + new Date(saved.savedAt).toLocaleString() + '.';
+          }
+        }
+      } catch { /* Storage may be disabled or full; retain the live result. */ }
       setPrediction(result);
       setLoading(false);
       setPredictions(prev => [...prev, result.prediction]);
       
       // Get location info and landmarks
       const [locationInfo, nearbyLandmarks] = await Promise.all([
-        reverseGeocode(lat, lng),
+        reverseGeocode(lat, lng, selectedName),
         Promise.resolve(getNearbyLandmarks(lat, lng))
       ]);
       
@@ -188,7 +204,7 @@ export default function Dashboard({ initialData }: DashboardProps) {
     setInputLat(result.lat.toFixed(6));
     setInputLng(result.lng.toFixed(6));
     setShowSearchResults(false);
-    handleEstimate(result.lat, result.lng);
+    handleEstimate(result.lat, result.lng, result.name);
   };
   
   return (
@@ -338,6 +354,8 @@ export default function Dashboard({ initialData }: DashboardProps) {
               prediction={prediction?.prediction || null}
               analysis={prediction?.analysis}
               analysisSource={prediction?.analysisSource}
+              aiEstimates={prediction?.aiEstimates}
+              analysisError={prediction?.analysisError}
               recommendations={prediction?.recommendations}
 
               location={location}

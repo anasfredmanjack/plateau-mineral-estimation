@@ -5,7 +5,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
   compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
 }).outputText, file);
 let response;
-class FakeGroq {
+class FakeGroq { static APIError = class extends Error {};
   chat = { completions: { create: async () => {
     if (response instanceof Error) throw response;
     return { choices: [{ message: { content: JSON.stringify(response) } }] };
@@ -18,17 +18,21 @@ const point = { x: 472562.5, y: 1077812.5, lat: 9.75, lng: 8.75, potassium: -0.3
 (async () => {
   delete process.env.GROQ_API_KEY;
   const local = await analyzeGrid(point, [point]);
-  assert.equal(local.analysisSource, 'local');
-  assert.equal(local.recommendations.length, 3);
+  assert.equal(local.analysisSource, 'unavailable');
+  assert.equal(local.recommendations.length, 0);
   process.env.GROQ_API_KEY = 'test-only';
-  response = { analysis: 'Compare local variation.', recommendations: ['Verify calibration.'] };
+  response = { analysis: 'Compare local variation.', recommendations: ['Verify calibration.'], confidencePercent: 40, riskLevel: 'high', rationale: 'Exploratory estimate only.' };
   const ai = await analyzeGrid(point, [point]);
   assert.equal(ai.analysisSource, 'ai');
   assert.deepEqual(ai.recommendations, response.recommendations);
+  assert.equal(ai.aiEstimates.confidencePercent, 40);
+  assert.equal('gradePercent' in ai.aiEstimates, false);
+  response.confidencePercent = 101;
+  assert.equal((await analyzeGrid(point, [])).analysisSource, 'unavailable');
   response = { analysis: 9, recommendations: [null] };
-  assert.deepEqual(await analyzeGrid(point, []), local);
+  assert.equal((await analyzeGrid(point, [])).analysisSource, 'unavailable');
   response = new Error('Service unavailable');
-  assert.deepEqual(await analyzeGrid(point, []), local);
+  assert.equal((await analyzeGrid(point, [])).analysisSource, 'unavailable');
   assert.equal(point.potassium, -0.37);
   console.log('AI analysis checks passed: valid response, malformed response, missing key, service failure, and unchanged grid values.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

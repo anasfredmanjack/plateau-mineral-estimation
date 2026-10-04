@@ -105,7 +105,7 @@ const LOCATION_BOUNDS: Array<{
   { name: 'sabon_barki', minLat: 9.75, maxLat: 9.82, minLng: 8.70, maxLng: 8.78 }
 ];
 
-export async function reverseGeocode(lat: number, lng: number): Promise<LocationInfo> {
+export async function reverseGeocode(lat: number, lng: number, selectedName?: string): Promise<LocationInfo> {
   // Resolve the actual position rather than naming it from overlapping rough bounds.
   try {
     const response = await fetch(
@@ -124,7 +124,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Location
     const data = await response.json();
     
     return {
-      name: data.name || data.address?.village || data.address?.suburb || data.address?.town || 'Unknown Location',
+      name: selectedName || data.name || data.address?.village || data.address?.suburb || data.address?.town || data.address?.city || data.address?.hamlet || data.address?.neighbourhood || data.address?.road || data.display_name?.split(',')[0] || `Location ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
       admin1: data.address?.state || data.address?.region || 'Plateau State',
       admin2: data.address?.county || data.address?.locality || 'Jos Area',
       admin3: data.address?.suburb || data.address?.village || 'Unknown Ward',
@@ -137,7 +137,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Location
     
     // Return generic location based on coordinates
     return {
-      name: `Location ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`,
+      name: selectedName || `Location ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`,
       admin1: 'Plateau State',
       admin2: 'Jos Area',
       admin3: 'Unknown',

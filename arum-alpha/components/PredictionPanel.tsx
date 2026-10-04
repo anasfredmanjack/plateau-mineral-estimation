@@ -1,18 +1,23 @@
 'use client';
-import { FlaskConical, MapPin, Sparkles, Navigation, CheckCircle } from 'lucide-react';
-import type { MineralPrediction, LocationInfo } from '@/types';
+import { useState } from 'react';
+import { FlaskConical, MapPin, Sparkles, Navigation, CheckCircle, Activity, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import type { MineralPrediction, LocationInfo, AIEstimates } from '@/types';
 interface Props {
   prediction: MineralPrediction | null;
   analysis?: string;
-  analysisSource?: 'ai' | 'local';
+  analysisSource?: 'ai' | 'cached-ai' | 'unavailable';
+  aiEstimates?: AIEstimates;
+  analysisError?: string;
   recommendations?: string[];
 
   location?: LocationInfo | null;
   landmarks?: string[];
   loading?: boolean;
 }
-export default function PredictionPanel({ prediction, analysis, analysisSource, recommendations, location, loading }: Props) {
-
+export default function PredictionPanel({ prediction, analysis, recommendations, aiEstimates, analysisError, location, loading }: Props) {
+  const [showRiskExplanation, setShowRiskExplanation] = useState(false);
+  const risk = aiEstimates?.riskLevel;
+  const riskStyle = risk === 'low' ? 'text-green-400 bg-green-400/20 border-green-400/30' : risk === 'medium' ? 'text-yellow-400 bg-yellow-400/20 border-yellow-400/30' : risk === 'high' ? 'text-red-400 bg-red-400/20 border-red-400/30' : 'text-slate-400 bg-slate-700/30 border-slate-600';
   if (loading) return <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-6 animate-pulse" aria-label="Loading grid values">
     <div className="h-4 bg-slate-600 rounded w-3/4 mb-4" />
     <div className="h-8 bg-slate-600 rounded w-1/2 mb-4" />
@@ -26,12 +31,30 @@ export default function PredictionPanel({ prediction, analysis, analysisSource, 
   </div>;
   return <section className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 overflow-hidden">
     <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
-      <div className="flex items-center gap-2 mb-1"><Sparkles className="w-5 h-5" /><h3 className="font-bold text-lg">Naraguta Grid Values</h3></div>
+      <div className="flex items-center gap-2 mb-1"><Sparkles className="w-5 h-5" /><h3 className="font-bold text-lg">AI Mineral Estimation</h3></div>
       {location ? <div><p className="text-white font-semibold text-lg">{location.name}</p>
         <p className="text-blue-100 text-xs">{location.admin2}, {location.admin1}</p></div>
         : <p className="text-blue-100 text-sm">Radiometric mineral data</p>}
     </div>
     <div className="p-4">
+      <div className="mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 rounded-lg p-3 border border-blue-700/50">
+            <div className="flex items-center gap-1 text-sm text-slate-400 mb-1"><Activity className="w-4 h-4 text-blue-400" />Confidence</div>
+            <p className="text-xl font-bold text-blue-300">{aiEstimates?.confidencePercent != null ? `${aiEstimates.confidencePercent.toFixed(0)}%` : 'Awaiting AI'}</p>
+          </div>
+          <div className={`rounded-lg p-3 border ${riskStyle}`}>
+            <div className="flex items-center gap-1 text-sm mb-1"><AlertTriangle className="w-4 h-4" />Risk Level</div>
+            <p className="text-xl font-bold">{risk ? `${risk.charAt(0).toUpperCase()}${risk.slice(1)} Risk` : 'Awaiting AI'}</p>
+          </div>
+        </div>
+        {aiEstimates && <div className="mb-3">
+          <button type="button" aria-expanded={showRiskExplanation} onClick={() => setShowRiskExplanation(!showRiskExplanation)} className="w-full bg-slate-700/50 hover:bg-slate-700 text-sm text-slate-300 py-2 px-3 rounded flex items-center justify-between">Risk Assessment Factors{showRiskExplanation ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</button>
+          {showRiskExplanation && <p className="text-sm text-slate-400 mt-2">{aiEstimates.rationale}</p>}
+        </div>}
+        <p className="text-xs text-slate-400 mt-2">Confidence is the model’s self-assessment.</p>
+        {analysisError && <p role="status" className="text-sm text-amber-300 mt-2">{analysisError}</p>}
+      </div>
       <div className="mb-4">
         <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-1"><FlaskConical className="w-4 h-4 text-blue-400" />Radiometric Data</h4>
         <dl className="grid grid-cols-3 gap-2 text-center">
@@ -44,11 +67,29 @@ export default function PredictionPanel({ prediction, analysis, analysisSource, 
             <dd className="font-semibold text-sm break-all" title={String(value)}>{value.toFixed(3)}</dd>
           </div>)}
         </dl>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-400">
-          <p>K/(Th+U): <span className="text-slate-200">{prediction.thorium + prediction.uranium !== 0 ? (prediction.potassium / (prediction.thorium + prediction.uranium)).toFixed(3) : 'Undefined'}</span></p>
-          <p>Th/U: <span className="text-slate-200">{prediction.uranium !== 0 ? (prediction.thorium / prediction.uranium).toFixed(3) : 'Undefined'}</span></p>
+        <div className="mt-3 space-y-2 text-xs text-slate-400">
+          {([
+            ['Potassium', 'K', prediction.potassium],
+            ['Thorium', 'Th', prediction.thorium],
+            ['Uranium', 'U', prediction.uranium],
+          ] as const).map(([name, symbol, value], index, minerals) => {
+            const others = minerals.filter((_, otherIndex) => otherIndex !== index);
+            const ratios: [string, number][] = [
+              ...others.map(([, otherSymbol, otherValue]): [string, number] => [`${symbol}/${otherSymbol}`, otherValue]),
+              [`${symbol}/(${others.map(([, otherSymbol]) => otherSymbol).join('+')})`, others.reduce((sum, [, , otherValue]) => sum + otherValue, 0)],
+            ];
+            return <div key={symbol} className="rounded-lg bg-slate-700/30 p-2">
+              <p className="font-medium text-slate-300 mb-1">{name} ratios</p>
+              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {ratios.map(([label, denominator]) => <div key={label}>
+                  <dt>{label}</dt>
+                  <dd className="text-slate-200 break-all">{denominator !== 0 && Number.isFinite(value / denominator) ? (value / denominator).toFixed(3) : 'Undefined'}</dd>
+                </div>)}
+              </dl>
+            </div>;
+          })}
+          <p className="text-slate-500">Ratios of raw grid values. K = potassium, Th = thorium, U = uranium. A zero denominator is shown as Undefined.</p>
         </div>
-        <p className="text-xs text-slate-500 mt-1">Ratios of raw grid values.</p>
         <p className="text-xs text-slate-400 mt-3">Values from the Naraguta grid file, displayed to three decimal places.</p>
       </div>
       {location && <div className="border-t border-slate-700 pt-4 mb-4">
@@ -56,8 +97,8 @@ export default function PredictionPanel({ prediction, analysis, analysisSource, 
         <p className="text-sm text-slate-400">{location.fullAddress}</p>
       </div>}
       {analysis && <div className="border-t border-slate-700 pt-4 mb-4">
-        <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-1"><Sparkles className="w-4 h-4 text-blue-400" />AI Summary</h4>
-        <p className="text-xs text-blue-300 mb-2">{analysisSource === 'ai' ? 'AI interpretation — verify with field evidence' : 'Local summary — AI service unavailable'}</p>
+        <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-1"><Sparkles className="w-4 h-4 text-blue-400" />AI Analysis</h4>
+        <p className="text-xs text-blue-300 mb-2">Generated by Groq — verify with field evidence</p>
         <p className="text-sm text-slate-400 leading-relaxed">{analysis}</p>
       </div>}
       {!!recommendations?.length && <div className="border-t border-slate-700 pt-4 mb-4">

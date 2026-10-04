@@ -27,9 +27,9 @@ No API keys or environment variables are required for sheet lookups. Node.js 24 
 1. Commit and push the app changes, including `data/naraguta.bin`, `data/naraguta.json`, and `scripts/`. The runtime does not need the Excel file or Python.
 2. Import the Git repository into Vercel and set **Root Directory** to **`arum-alpha`**.
 3. Use the **Next.js** framework preset. Leave the output directory at its default. `vercel.json` sets the install command to `npm ci` and the build command to `npm run build`.
-4. To enable AI summaries and recommendations, set **GROQ_API_KEY** to your private Groq key in Vercel. Optionally set **GROQ_MODEL** (default: `llama-3.3-70b-versatile`). Click **Deploy**. Without a working key, the app uses a labelled local summary.
+4. To enable AI summaries and recommendations, set **GROQ_API_KEY** to your private Groq key in Vercel. Optionally set **GROQ_MODEL** (default: `openai/gpt-oss-120b`). Click **Deploy**. Without a working key, grid values remain available and the app shows an AI-service error; it does not substitute local summaries or recommendations.
 
-AI interpretations use exact grid readings and surrounding averages; they never replace the measured grid values. An unavailable service or invalid AI response falls back to local analysis. Grade, risk, confidence, and model-performance sections show unavailable status until a validated prediction model is supplied. Raw-value ratios are provided separately.
+Groq generates the summary, recommendations, exploratory tin-grade percentage, exploration risk, and subjective confidence from exact grid readings and surrounding averages. These are labelled AI estimates, not measured assays or validated probabilities. Groq may abstain (null) when evidence is insufficient. Numeric percentages use percentage points (0.25 means 0.25%). Invalid responses and provider failures show an error without inventing local metrics. Raw grid values remain unchanged.
 
 The build checks the data checksum and verifies that both API function traces include the 4.4 MiB workbook export. Missing data stops deployment instead of producing incorrect results.
 

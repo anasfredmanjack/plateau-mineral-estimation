@@ -46,8 +46,16 @@ export interface EstimationRequest {
   radius?: number;
 }
 
+export interface AIEstimates {
+  confidencePercent: number | null;
+  riskLevel: 'low' | 'medium' | 'high' | null;
+  rationale: string;
+}
+
 export interface EstimationResponse {
-  analysisSource?: 'ai' | 'local';
+  analysisSource?: 'ai' | 'cached-ai' | 'unavailable';
+  aiEstimates?: AIEstimates;
+  analysisError?: string;
   prediction: MineralPrediction;
   surroundingPoints?: MineralPrediction[];
   modelMetrics?: ModelMetrics;
